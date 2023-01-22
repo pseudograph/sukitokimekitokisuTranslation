@@ -4,7 +4,7 @@ https://github.com/arcusmaximus/VNTranslationTools
 
 http://www.insani.org/tools/
 
-..* How to
+  * How to
 1. Extract .ks files from data.xp3 included with the game to the 'raw' directory (already done)
 
 2. (Easy way) Open unpack_script_DANGEROUS and run unpack.bat, skip to step 3. 
