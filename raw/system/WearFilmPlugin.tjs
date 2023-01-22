@@ -1,0 +1,242 @@
+/*------------------------------------------------------------------------------
+/		Copyright (C) サークル煌明	All Rights Reserved.
+/			WeareFilmPlugin Ver.0.6X
+/-----------------------------------------------------------------------------*/
+@if(__WEARFILMPLUGIN_OBJECT_DEFINED__==0)
+@set(__WEARFILMPLUGIN_OBJECT_DEFINED__=1)
+//Scripts.execStorage("SubRoutine.tjs");
+Scripts.execStorage("KAGPluginLX.tjs");
+Scripts.execStorage("SharedContinuousHandler.tjs");
+
+class WearFilmPlugin extends KAGPluginLX {
+
+	var line = [], lineconf = %[];		// ライン
+	var sway, swaymove = true;			// ゆらし
+	var flick, flicklight = true;		// ちらつき
+	var noise;							// ノイズ
+	var swaytarget="base,0,1,2,3,4";
+
+	function WearFilmPlugin(window, plgName) {
+		super.KAGPluginLX();
+		this.window = window;
+		pluginName = "WearFilm";
+		absolute = 190000;
+	}
+
+	function finalize() {
+		stop();
+		super.finalize(...);
+	}
+
+	function set(elm) {
+		base = window.fore.base;
+		sway =		elm.sway!==void ?		elm.sway		: false;
+		swaytarget =elm.swaytarget!==void ?	elm.swaytarget	: "base,0,1,2,3,4";
+		flick =		elm.flick!==void ?		elm.flick		: false;
+		noise =		elm.noise!==void ?		elm.noise		: false;
+		elm.visible = true;
+		initLayer(elm);
+
+		with(lineconf) {
+			.line =	elm.line!==void ?		elm.line		: false;
+			if(!!.line) {
+				.linecolor =	elm.linecolor!==void ?	elm.linecolor	: 0xFF000000;
+				.linespeed =	elm.linespeed!==void ?	elm.linespeed	: 5;
+				.lineappair =	elm.lineappair!==void ?	elm.lineappair	: 0.80;
+				.linefreq =		elm.linefreq!==void ?	elm.linefreq	: 0.92;
+				var m = true;
+				for(var i=0; i<.line; i++) {
+					setLine(i,(m=!m));
+				}
+			}
+		}
+
+		SharedContinuousHandler_object.entry(this,64);
+
+		super.set(...);
+	}
+
+	function onTimer() {
+		var w = base.width, h = base.height;
+
+		// 要調整。古い映画のこと知らないから適当な値は判らないよ
+		if(flick) {
+			showLayer.fillRect(0,0,w,h,(flicklight?0x01AFAFAF:0x04EFEFEF));
+		//	showLayer.fillRect(0,0,w,h,(flicklight?0x03EFEFEF:0x20AFAFAF));
+			flicklight = !flicklight;	// 一回ごとに反転
+		} else {
+			showLayer.fillRect(0,0,w,h,0x00000000);
+		}
+
+		if(lineconf.line>0) {	// 線を引く
+			var lc = lineconf;
+			for(var i=0; i<lc.line; i++) {
+				if(Math.random()<lc.lineappair) {
+					var l = line[i];
+					showLayer.fillRect(l[0],0,1,h,lc.linecolor);
+					l[0] +=l[1];
+					if(l[0]<=0 || l[0]>=w || Math.random()>lc.linefreq) {
+						// ランダムに位置移動 方向転換無し
+						setLine(i,(l[1]>=0?true:false));
+					}
+				}
+			}
+		}
+
+		if(sway!==false) {	// ゆらす
+		// たまにしか揺らさない。
+			if(Math.random()<sway || swaymove) {
+				changeLayerPos(,(swaymove?1:-1));
+				swaymove = !swaymove;		// 一回ごとに交代
+			}
+		}
+
+		if(noise) {	// ノイズをのせる
+		// 落ちちゃうから、一万とか無茶な数は指定しないように。
+			var nl,nt,nw,nh;
+			var nc = int(Math.random()*noise);
+			for(var i=1; i<=nc; i++) {
+				nl = int(Math.random()*w), nt = int(Math.random()*h);
+				nw = int(Math.random()*2+1), nh = int(Math.random()*2+1);
+				showLayer.fillRect(nl,nt,nw,nh,0x66FFFFFF);
+			}
+		}
+
+		super.onTimer();
+	}
+
+	function setLine(i, m) {
+		var l = line[i] = [];
+		l[0] = int(Math.random()*base.width);
+		l[1] = int(Math.random()*lineconf.linespeed);	// 移動速度
+		if(m) l[1] = -l[1];				// 方向反転
+	}
+
+/*-↑-各種効果----------------------------------------------------------------*/
+/*---SubRoutine---------------------------------------------------------------*/
+function splitLayer(fores = [], backs = [], strings, page="fore") {
+	var targets = [] = strings.split(",", ,true);
+	var apage = page!=='fore' ? 'fore' : 'back';	// 指定ページ裏表逆
+
+	for(var i=0;i<targets.count;i++) {
+		var t = targets[i];
+		if(t==='base') {
+		// "base" なら背景レイヤ
+			fores.add(kag[page].base);
+			backs.add(kag[apage].base);
+		} else if(t[0]==='m') {
+		// "message" ならカレント
+		// "messages0", "messages1"... なら該当するメッセージレイヤ
+			if(t==='message') {
+				fores.add(kag[page].messages[kag.currentNum]);
+				backs.add(kag[apage].messages[kag.currentNum]);
+			} else {
+				fores.add(kag[page].messages[+t.substr(7)]);
+				backs.add(kag[apage].messages[+t.substr(7)]);
+			}
+		} else if((/^[0-9]*$/.test(t)) && t<=kag.numCharacterLayers) {
+		// 0, 1... など数字だけなら該当する前景レイヤ
+			fores.add(kag[page].layers[t]);
+			backs.add(kag[apage].layers[t]);
+		} else {
+		// それ以外はレイヤへの参照を表す文字列だと見なして処理
+			fores.add(Scripts.eval(t));
+			backs.add(void);
+		}
+	}
+}
+
+function changeLayerPos(left, top) {
+	var f = [];
+	var b = [];
+	splitLayer(f,b,swaytarget,"fore");
+
+	for(var i=0; i<=f.count; i++) {
+		if(f[i]!==void && f[i].visible) {
+		// プライマリレイヤはsetPosで移動できない
+			if(f[i]===kag["fore"].base) {
+				f[i].copyRect(f[i].left+left, f[i].top+top, f[i], 0, 0, f[i].width, f[i].height);
+			} else {
+				f[i].setPos(f[i].left+left, f[i].top+top);
+			}
+		}
+		if(b[i]!==void && b[i].visible) {
+			if(b[i]===kag["back"].base) {
+				b[i].copyRect(b[i].left+left, b[i].top+top, b[i], 0, 0, b[i].width, b[i].height);
+			} else {
+				b[i].setPos(b[i].left+left, b[i].top+top);
+			}
+		}
+	}
+//	b.setPos(0,0);
+	return;
+}
+/*---SubRoutine---------------------------------------------------------------*/
+
+	function stop() {
+		if(doing) {
+			if(!!sway&&!swaymove) {		// 元の位置に復帰する
+				changeLayerPos(,-1);
+			}
+
+			SharedContinuousHandler_object.leave(this);
+			window.trigger("WearFilm");
+			super.stop();
+		}
+	}
+
+	function onStore(f, elm) {
+		f[pluginName] = %[];
+		with(f[pluginName]) {
+			if(doing) {
+				(Dictionary.assign incontextof f[pluginName])(lineconf);
+				.sway		= sway;
+				.swaytarget = swaytarget;
+				.flick		= flick;
+				.noise		= noise;
+				.doing		= doing;
+			} else {
+				.doing = false;
+			}
+		}
+	}
+
+	function onRestore(f, clear, elm) {
+		if(f[pluginName]===void) return;
+		super.onRestore(...);
+		with(f[pluginName]) {
+			if(.doing) {
+				reStoreProp(...);
+				set(f["WearFilm"]);
+ 			} else {
+				stop();
+			}
+		}
+	}
+}
+// プラグインオブジェクトを作成し、登録する
+kag.addPlugin(global.WearFilmPlugin_object = new WearFilmPlugin(kag, "WearFilmPlugin"));
+
+
+/* マクロ登録 */
+kag.tagHandlers.wearfilm = function(elm = %[]) {
+	if(!global.WearFilmPlugin_object.doing) {
+		WearFilmPlugin_object.set(elm);
+	}
+	return 0;
+} incontextof kag;
+
+kag.tagHandlers.finishwearfilm = function() {
+	if(global.WearFilmPlugin_object.doing) {
+		WearFilmPlugin_object.finish();
+	}
+	return 0;
+} incontextof kag;
+
+kag.tagHandlers.stopwearfilm = function() {
+	if(global.WearFilmPlugin_object.doing) {
+		WearFilmPlugin_object.finish();
+	}
+	return 0;
+} incontextof kag;
+@endif

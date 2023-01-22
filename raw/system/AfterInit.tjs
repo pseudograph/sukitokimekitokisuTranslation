@@ -1,0 +1,105 @@
+//return tagHandlers.cm_org(elm); だとなぜかエラーが出るので 
+//return tagHandlers.org_cm(elm); に名前を変更
+//コメントをつけまくって、逆に見づらい
+
+with(kag) 
+{
+	.currentMessage = ""; //見出しへの追加文字（メッセージレイヤの一番上に表示されている文字） 
+	.storeCurrentMessages = 20; //見出しに追加する文字数 
+
+	//kag.tagHandlersにタグの実装が入っている（[macro][if]等の例外有）
+	.tagHandlers.org_ch = .tagHandlers.ch; 
+	.tagHandlers.ch = function( elm ) 
+	{ 
+		// 文字表示 actualChSpeed = chSpeed 実際の文字表示スピード
+		var acs = actualChSpeed; 
+		//updateBeforeCh 文字を描画する前にいったん画面描画に入るかどうかのカウント
+		if(updateBeforeCh) 
+		{ 
+			if(acs) { updateBeforeCh--; return -5; } else { updateBeforeCh--; } 
+		} 
+		//上の処理は良く分からないけれど、本来のchタグの先頭部分
+		var len = currentMessage.length; 
+		//追加文字数がstoreCurrentMessages（ここでは20）以下
+		//でかつf.noStoreCurrentMessageがfalseなら文字追加
+		if((len < storeCurrentMessages) && (!f.noStoreCurrentMessage)) 
+			//substring(<開始文字位置>,<文字数>) 
+			//例：var ss="abcdefghijkl".substring(3,3); ss には "def" が代入される
+			currentMessage += elm.text.substring(0, storeCurrentMessages - len);
+		//追加文字数がstoreCurrentMessagesの時
+		//でかつf.noStoreCurrentMessageがfalseなら"　　"追加
+		if((len == storeCurrentMessages) && (!f.noStoreCurrentMessage))
+			currentMessage += "　　";
+		return tagHandlers.org_ch(elm); //本来のchタグの処理に戻る
+	} incontextof kag; 
+
+	.tagHandlers.org_cm = .tagHandlers.cm; 
+	.tagHandlers.cm = function( elm ) 
+	{ 
+		currentMessage = ""; // 見出しへの追加文字をリセット 
+		return tagHandlers.org_cm(elm); //本来のcmタグの処理に戻る
+	} incontextof kag; 
+
+	.saveBookMarkToFile_org = .saveBookMarkToFile; 
+	.saveBookMarkToFile = function(fn, savehist = true) 
+	{ 
+		//readOnlyMode 読み込み専用モードなら、リターン
+		if(readOnlyMode) return false; 
+		//pcflags「保存可能なラベル」を通過した時点でのフラグ(コア)
+		pcflags.currentMessage = currentMessage; // 見出しへの追加文字を栞に保存 
+		return saveBookMarkToFile_org(fn, savehist); 
+	} incontextof kag; 
+
+	.saveBookMarkWithAsk = function(num) 
+	{ 
+		// 栞番号 num に栞を設定する 
+		// そのとき、設定するかどうかをたずねる 
+		if(readOnlyMode) return false; 
+		//bookMarkProtectedStates 栞が保護されているかの情報
+		if(bookMarkProtectedStates[num]) return false; 
+		var prompt = "栞 "; 
+		if(num < numBookMarks) prompt += (num + 1); 
+		if(bookMarkDates[num] != "") // bookMarkDates が空文字の場合は栞は存在しない 
+			prompt += "「" + bookMarkNames[num] + "」"; 
+		if(f.noStoreCurrentMessage)
+			prompt += "に「"+ pcflags.currentPageName + "」をはさみますか?"; 
+		else
+			prompt += "に「"+ currentMessage + "」をはさみますか?"; 
+		//セーブタイトルを（見出し＋メッセージレイヤの一番上に表示されている文字）にしたいなら
+		//上のif(f.noStoreCurrentMessage)からコメントアウトして下のコメントアウトを外してください。
+//		prompt += "に「"+ pcflags.currentPageName + " " + currentMessage + "」をはさみますか?"; 
+		var result = askYesNo(prompt); 
+		//「はい」なら保存
+		if(result) return saveBookMark(num); //本来の処理には戻らない
+		//「いいえ」ならfalseを返す
+		return false; 
+	} incontextof kag; 
+
+	.getBookMarkInfoFromData = function(dic, num) 
+	{ 
+		// 辞書配列 dic から栞のページ名と日付を読み出し、 
+		// bookMarkDates[num] や bookMarkNames[num] に設定する 
+		// numBookMarks メニューに用意する栞のサブメニュー項目の数
+		if(num < numBookMarks) 
+		{ 
+			if(f.noStoreCurrentMessage)
+				bookMarkNames[num] = dic.currentPageName;
+			else
+				bookMarkNames[num] = currentMessage; 
+			//セーブタイトルを（見出し＋メッセージレイヤの一番上に表示されている文字）にしたいなら
+			//上のif(f.noStoreCurrentMessage)からコメントアウトして下のコメントアウトを外してください。
+//			bookMarkNames[num] = dic.currentPageName + " " + currentMessage; 
+			var date = new Date(); 
+			date.setTime(dic.storeTime); 
+			date = "%04d/%02d/%02d %02d:%02d".sprintf( 
+			date.getYear(), date.getMonth() + 1, date.getDate(), 
+			date.getHours(), date.getMinutes() ); 
+			bookMarkDates[num] = date; 
+			setBookMarkMenuCaptions(); 
+			saveSystemVariables(); 
+		} 
+	} incontextof kag; 
+}
+// 最後に通過した[cm]タグから、kag.storeCurrentMessages文字分だけを見出しへの追加文字とする 
+// ただし、f.noStoreCurrentMessageが真の間に表示した分は除外 
+// （見出しにしたくない文字を表示するときは、上のフラグをONにする） 
