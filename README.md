@@ -1,5 +1,7 @@
 Uses code from:
+
 https://github.com/arcusmaximus/VNTranslationTools
+
 http://www.insani.org/tools/
 
 1. Extract .ks files from data.xp3 included with the game to the 'raw' directory (already done)
