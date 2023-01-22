@@ -1,6 +1,15 @@
+Uses code from:
+
+https://github.com/arcusmaximus/VNTranslationTools
+
+http://www.insani.org/tools/
+
+
+The step numbering is broken because I suck at markup
+
 1. Extract .ks files from data.xp3 included with the game to the 'raw' directory (already done)
 
-2. (Easy way) Open unpack_script_DANGEROUS and run unpack.bat, skip to step 3. 
+2. (Easy way) Open unpack_script_DANGEROUS and run unpack.bat, skip the next step 
 
 2. (Manual way) Select a folder containing .ks files and convert it into a .xlsx file with VNTextPatch. e.g. 
 
@@ -9,13 +18,13 @@
 
 3. Edit the .xlsx file
 
-4. (Easy way) Run repack.bat, skip to step 6
+4. (Easy way) Run repack.bat, skip the next two steps
 
 4. (Manual way) Convert the .xlsx file into .ks files with VNTextPatch. You need the directory containing the original, unedited .ks files, the edited .xlsx file and an output directory for the patched .ks files. e.g.
 
 ./VNTextPatch.exe insertlocal '../../../raw/scenario' '../../../xlsx/script.xlsx' '../../../translated'
 
-5. Repack the .ks files into an .xp3 file using insani's xp3tools. e.g.
+5. (Manual way) Repack the .ks files into an .xp3 file using insani's xp3tools. e.g.
 
 ./xp3-repack.exe '../../translated' '../../patch/patch.xp3'
 
