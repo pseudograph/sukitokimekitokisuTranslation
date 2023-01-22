@@ -5,6 +5,7 @@ https://github.com/arcusmaximus/VNTranslationTools
 http://www.insani.org/tools/
 
 
+The step numbering is broken because I suck at markup
 
 1. Extract .ks files from data.xp3 included with the game to the 'raw' directory (already done)
 
