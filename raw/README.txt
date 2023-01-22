@@ -1,0 +1,1 @@
+Use GARBro to extract an .xp3 file and place its contents here.
