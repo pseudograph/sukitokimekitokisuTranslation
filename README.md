@@ -43,3 +43,7 @@ The game process does not exit when the game is closed and for some reason remai
 Word wrap settings are controlled by VNTextPatch.exe.config in the VNTextPatch directory. The tool is compiled by default to use proportional, not monospace wrapping. Excess text is automatically moved to the next textbox so there is no hard limit no how long a translation should be (but ideally should be avoided, in case of bugs)
 
 The unpack script is dangerous because it overwrites everything, including script.xlsx, replacing it with a fresh .xlsx file. You should not have to use it more than once. The git repository probably already has the .ks files unpacked so you shouldn't have to use it at all unless you want to extract files from another game.
+
+On translating blocks of text with a click-pause and line-break in between, but without a textbox reset:
+Some sections of text are split into two rows in the .xlsx without a scene title row to separate them (e.g. プロローグ). This means that both chunks are supposed to appear in the same dialogue box, but the reader must click to display the second row.
+You must append [r] to the first row to force a newline between the two, or the second row of text will appear directly after where the first row of text ends. You can (probably) insert [L] to force a click-pause. 
