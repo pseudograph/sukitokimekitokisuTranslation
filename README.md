@@ -53,3 +53,11 @@ You must append [r] to the first row to force a newline between the two, or the 
 Row 33 of シナリオ1 is an example of this.
 
 In most other cases the repack tool should automatically insert [r]s to manually wrap the text.
+
+* On wiping the textbox:
+
+Add [l][er] to the script to wipe the textbox before displaying the next line (within the same row in the xlsx). Row 136 of シナリオ1 is an example of this.
+
+The second line of text appears vertically centred which is strange but preferable to filling an entire textbox with two lines of text, or worse, having the second line of text overflow into an additional textbox.
+
+It should be possible to create a legitimately new "row" of text but we might have to edit the .ks files manually to do this, or write a tool that replaces [l][er]s with boilerplate code to segment the next line of text into a brand new dialogue box.
